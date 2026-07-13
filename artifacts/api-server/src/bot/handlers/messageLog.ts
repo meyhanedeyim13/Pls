@@ -4,13 +4,30 @@ import { buildEmbed, sendLog } from "../utils/logger.js";
 import { E } from "../utils/emojis.js";
 
 const EXEMPT_ROLE_ID = "1515760496425308300";
+const DEDUP_TTL = 5000;
 
-function isExempt(message: {
-  member?: { roles: { cache: Map<string, unknown> } } | null;
-  author?: { bot?: boolean };
-}): boolean {
-  if (message.author?.bot) return true;
-  return message.member?.roles.cache.has(EXEMPT_ROLE_ID) ?? false;
+const recentDeletes = new Map<string, number>();
+const recentEdits = new Map<string, number>();
+
+function dedupDelete(messageId: string): boolean {
+  const now = Date.now();
+  if (recentDeletes.has(messageId) && now - recentDeletes.get(messageId)! < DEDUP_TTL) return true;
+  recentDeletes.set(messageId, now);
+  if (recentDeletes.size > 200) {
+    for (const [k, t] of recentDeletes) { if (now - t >= DEDUP_TTL) recentDeletes.delete(k); }
+  }
+  return false;
+}
+
+function dedupEdit(messageId: string, newContent: string): boolean {
+  const key = `${messageId}:${newContent.slice(0, 100)}`;
+  const now = Date.now();
+  if (recentEdits.has(key) && now - recentEdits.get(key)! < DEDUP_TTL) return true;
+  recentEdits.set(key, now);
+  if (recentEdits.size > 200) {
+    for (const [k, t] of recentEdits) { if (now - t >= DEDUP_TTL) recentEdits.delete(k); }
+  }
+  return false;
 }
 
 export function registerMessageLog(client: Client): void {
@@ -18,14 +35,15 @@ export function registerMessageLog(client: Client): void {
     if (!newMessage.guild) return;
     if (newMessage.author?.bot) return;
 
-    const member = newMessage.member
-      ?? await newMessage.guild.members.fetch(newMessage.author!.id).catch(() => null);
-    if (member?.roles.cache.has(EXEMPT_ROLE_ID)) return;
-
     const before = oldMessage.content ?? "(önbellek yok)";
     const after = newMessage.content ?? "(boş)";
 
     if (before === after) return;
+    if (dedupEdit(newMessage.id, after)) return;
+
+    const member = newMessage.member
+      ?? await newMessage.guild.members.fetch(newMessage.author!.id).catch(() => null);
+    if (member?.roles.cache.has(EXEMPT_ROLE_ID)) return;
 
     await sendLog(
       newMessage.guild,
@@ -46,12 +64,8 @@ export function registerMessageLog(client: Client): void {
   client.on(Events.MessageDelete, async (message) => {
     if (!message.guild) return;
     if (message.author?.bot) return;
-
     if (CONFIG.PROTECTED_CHANNEL_IDS.includes(message.channelId)) return;
-
-    const member = message.member
-      ?? await message.guild.members.fetch(message.author!.id).catch(() => null);
-    if (member?.roles.cache.has(EXEMPT_ROLE_ID)) return;
+    if (dedupDelete(message.id)) return;
 
     const content = message.content || null;
     const attachments = message.attachments.map((a) => a.url);
