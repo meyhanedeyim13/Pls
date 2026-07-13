@@ -14,6 +14,7 @@ import { registerMessageDelete } from "./handlers/messageDelete.js";
 import { registerSlashCommands } from "./handlers/slashCommands.js";
 import { scheduleNightlyBackup } from "./handlers/backup.js";
 import { registerLinkGuard } from "./handlers/linkGuard.js";
+import { registerMessageLog } from "./handlers/messageLog.js";
 import { ensureSettingsTable } from "./utils/db.js";
 
 export function startBot(): void {
@@ -52,6 +53,7 @@ export function startBot(): void {
   registerServerEvents(client);
   registerMessageDelete(client);
   registerLinkGuard(client);
+  registerMessageLog(client);
   registerSlashCommands(client);
   scheduleNightlyBackup(client);
 
