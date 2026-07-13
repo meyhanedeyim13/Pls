@@ -8,6 +8,7 @@ import {
 } from "discord.js";
 import { isExemptExecutor, isExemptRoleOnly, recordAction } from "../utils/actionTracker.js";
 import { buildEmbed, sendLog } from "../utils/logger.js";
+import { E } from "../utils/emojis.js";
 
 export function registerChannelCreate(client: Client): void {
   client.on(Events.ChannelCreate, async (channel) => {
@@ -45,7 +46,7 @@ export function registerChannelCreate(client: Client): void {
         await sendLog(
           guild,
           buildEmbed({
-            title: "➕ Kanal Oluşturuldu",
+            title: `${E.plus} Kanal Oluşturuldu`,
             description: `**#${channelName}** kanalı oluşturuldu.`,
             color: Colors.Blue,
             fields: [
@@ -58,7 +59,7 @@ export function registerChannelCreate(client: Client): void {
         if (isExemptRoleOnly(executor.id, member.roles.cache.map((r) => r.id))) {
           try {
             await member.send(
-              `📋 **Bilgi:** **#${channelName}** kanalını oluşturdun. Bu işlem kayıt altına alındı. Muaf olduğun için herhangi bir yaptırım uygulanmadı.`,
+              `${E.clipboard} **Bilgi:** **#${channelName}** kanalını oluşturdun. Bu işlem kayıt altına alındı. Muaf olduğun için herhangi bir yaptırım uygulanmadı.`,
             );
           } catch { /* DM kapalı */ }
         }
@@ -74,7 +75,7 @@ export function registerChannelCreate(client: Client): void {
       await sendLog(
         guild,
         buildEmbed({
-          title: "➕ Kanal Oluşturuldu",
+          title: `${E.plus} Kanal Oluşturuldu`,
           description: `**#${channelName}** kanalı oluşturuldu.`,
           color: Colors.Blue,
           fields: [
@@ -89,13 +90,13 @@ export function registerChannelCreate(client: Client): void {
         await sendLog(
           guild,
           buildEmbed({
-            title: "⚠️ UYARI — Son Hak",
+            title: `${E.warning} UYARI — Son Hak`,
             description: `<@${executor.id}> **2. kanal oluşturma** işlemini yaptı. Bir tane daha oluşturursa yetkileri alınacak!`,
             color: Colors.Yellow,
             fields: [{ name: "Uyarı", value: "Tek hakkın var!" }],
           }),
         );
-        try { await member.send("⚠️ **Uyarı:** 2. kanalı oluşturdun. Bir tane daha oluşturursan yönetici yetkilerin alınacak!"); } catch { /* ignore */ }
+        try { await member.send(`${E.warning} **Uyarı:** 2. kanalı oluşturdun. Bir tane daha oluşturursan yönetici yetkilerin alınacak!`); } catch { /* ignore */ }
       }
 
       if (exceeded) {
@@ -115,7 +116,7 @@ export function registerChannelCreate(client: Client): void {
         await sendLog(
           guild,
           buildEmbed({
-            title: "🚨 YETKİ ALINDI — Kanal Oluşturma Limiti Aşıldı",
+            title: `${E.security} YETKİ ALINDI — Kanal Oluşturma Limiti Aşıldı`,
             description: `<@${member.id}> 3. kanalı oluşturdu. Yönetici rolleri alındı.`,
             color: Colors.DarkRed,
             fields: [
@@ -127,7 +128,7 @@ export function registerChannelCreate(client: Client): void {
           }),
         );
 
-        try { await member.send("🚨 **Yetkilerin alındı!** Kanal oluşturma limitini aştığın için yönetici rollerin kaldırıldı."); } catch { /* ignore */ }
+        try { await member.send(`${E.security} **Yetkilerin alındı!** Kanal oluşturma limitini aştığın için yönetici rollerin kaldırıldı.`); } catch { /* ignore */ }
       }
     } catch (err) {
       console.error("channelCreate handler error:", err);

@@ -3,13 +3,12 @@ import {
   Events,
   AuditLogEvent,
   Colors,
-  ChannelType,
 } from "discord.js";
 import { buildEmbed, sendLog } from "../utils/logger.js";
+import { E } from "../utils/emojis.js";
 
 export function registerServerEvents(client: Client): void {
 
-  // ── Kanal izinleri değişimi ──────────────────────────────────────────
   client.on(Events.ChannelUpdate, async (oldChannel, newChannel) => {
     if (!("guild" in newChannel) || !newChannel.guild) return;
     const guild = newChannel.guild;
@@ -63,7 +62,7 @@ export function registerServerEvents(client: Client): void {
       await sendLog(
         guild,
         buildEmbed({
-          title: "⚙️ Kanal Güncellendi",
+          title: `${E.settings} Kanal Güncellendi`,
           description: `**#${chanName}** kanalında değişiklik yapıldı.`,
           color: Colors.Orange,
           fields,
@@ -74,7 +73,6 @@ export function registerServerEvents(client: Client): void {
     }
   });
 
-  // ── Kullanıcı adı / global isim değişimi ─────────────────────────────
   client.on(Events.UserUpdate, async (oldUser, newUser) => {
     const usernameChanged = oldUser.username !== newUser.username;
     const displayNameChanged = oldUser.displayName !== newUser.displayName;
@@ -96,7 +94,7 @@ export function registerServerEvents(client: Client): void {
       await sendLog(
         guild,
         buildEmbed({
-          title: "👤 Kullanıcı Profili Değişti",
+          title: `${E.user} Kullanıcı Profili Değişti`,
           description: `<@${newUser.id}> profilini güncelledi.`,
           color: Colors.Blurple,
           fields,
@@ -105,7 +103,6 @@ export function registerServerEvents(client: Client): void {
     }
   });
 
-  // ── Sunucu nickname değişimi ──────────────────────────────────────────
   client.on(Events.GuildMemberUpdate, async (oldMember, newMember) => {
     const oldNick = oldMember.nickname;
     const newNick = newMember.nickname;
@@ -132,7 +129,7 @@ export function registerServerEvents(client: Client): void {
       await sendLog(
         guild,
         buildEmbed({
-          title: "✏️ Nickname Değişti",
+          title: `${E.edit} Nickname Değişti`,
           description: `<@${newMember.id}> için sunucu adı güncellendi.`,
           color: Colors.LightGrey,
           fields: [
@@ -149,7 +146,6 @@ export function registerServerEvents(client: Client): void {
     }
   });
 
-  // ── Rol oluşturma / silme / güncelleme ───────────────────────────────
   client.on(Events.GuildRoleCreate, async (role) => {
     const guild = role.guild;
     await new Promise((r) => setTimeout(r, 500));
@@ -159,7 +155,7 @@ export function registerServerEvents(client: Client): void {
         (e) => e.target?.id === role.id && Date.now() - e.createdTimestamp < 10000,
       );
       await sendLog(guild, buildEmbed({
-        title: "🟢 Rol Oluşturuldu",
+        title: `${E.inactive} Rol Oluşturuldu`,
         description: `**${role.name}** rolü oluşturuldu.`,
         color: Colors.Green,
         fields: [
@@ -179,7 +175,7 @@ export function registerServerEvents(client: Client): void {
         (e) => e.target?.id === role.id && Date.now() - e.createdTimestamp < 10000,
       );
       await sendLog(guild, buildEmbed({
-        title: "🔴 Rol Silindi",
+        title: `${E.active} Rol Silindi`,
         description: `**${role.name}** rolü silindi.`,
         color: Colors.Red,
         fields: [
@@ -203,7 +199,7 @@ export function registerServerEvents(client: Client): void {
         (e) => e.target?.id === newRole.id && Date.now() - e.createdTimestamp < 10000,
       );
       await sendLog(guild, buildEmbed({
-        title: "🔧 Rol Güncellendi",
+        title: `${E.tool} Rol Güncellendi`,
         description: `**${newRole.name}** rolünde değişiklik.`,
         color: Colors.Yellow,
         fields: [
@@ -217,7 +213,6 @@ export function registerServerEvents(client: Client): void {
     } catch (err) { console.error("roleUpdate event handler error:", err); }
   });
 
-  // ── Sunucu ayarları değişimi ──────────────────────────────────────────
   client.on(Events.GuildUpdate, async (oldGuild, newGuild) => {
     const nameChanged = oldGuild.name !== newGuild.name;
     const iconChanged = oldGuild.icon !== newGuild.icon;
@@ -230,7 +225,7 @@ export function registerServerEvents(client: Client): void {
         (e) => Date.now() - e.createdTimestamp < 10000,
       );
       await sendLog(newGuild, buildEmbed({
-        title: "🏠 Sunucu Güncellendi",
+        title: `${E.home} Sunucu Güncellendi`,
         description: "Sunucu ayarları değiştirildi.",
         color: Colors.Purple,
         fields: [

@@ -6,6 +6,7 @@ import {
 } from "discord.js";
 import cron from "node-cron";
 import { buildEmbed, sendLog } from "../utils/logger.js";
+import { E } from "../utils/emojis.js";
 
 interface ChannelBackup {
   id: string;
@@ -107,10 +108,8 @@ export async function restoreBackup(
   const restoredRoles: string[] = [];
   const failedItems: string[] = [];
 
-  // ── 1. ROL GERİ YÜKLE ────────────────────────────────────────────────────
   const existingRoleIds = new Set(guild.roles.cache.keys());
 
-  // Rolleri pozisyona göre sırala (düşükten yükseğe)
   const missingRoles = backup.roles
     .filter((r) => !existingRoleIds.has(r.id))
     .sort((a, b) => a.position - b.position);
@@ -131,9 +130,7 @@ export async function restoreBackup(
     }
   }
 
-  // ── 2. KATEGORİLERİ ÖNCE OLUŞTUR ─────────────────────────────────────────
   const existingChannelIds = new Set(guild.channels.cache.keys());
-  // Eski kategori ID → yeni oluşturulan kanal ID eşlemesi
   const categoryIdMap = new Map<string, string>();
 
   const missingCategories = backup.channels.filter(
@@ -149,20 +146,18 @@ export async function restoreBackup(
         reason: "Güvenlik Botu: Yedekten kategori geri yükleme",
       });
       categoryIdMap.set(cat.id, created.id);
-      restoredChannels.push(`📁 ${cat.name}`);
+      restoredChannels.push(`${E.folder} ${cat.name}`);
     } catch {
       failedItems.push(`Kategori oluşturulamadı: ${cat.name}`);
     }
   }
 
-  // Mevcut kategoriler de eşlemede olsun (silinmemiş olanlar)
   for (const [id, ch] of guild.channels.cache) {
     if (ch.type === ChannelType.GuildCategory) {
       if (!categoryIdMap.has(id)) categoryIdMap.set(id, id);
     }
   }
 
-  // ── 3. DİĞER KANALLARI OLUŞTUR ───────────────────────────────────────────
   const missingChannels = backup.channels
     .filter(
       (ch) =>
@@ -171,7 +166,6 @@ export async function restoreBackup(
     .sort((a, b) => a.position - b.position);
 
   for (const ch of missingChannels) {
-    // Eski parent ID'yi yeni ID'ye çevir
     const newParentId = ch.parentId ? (categoryIdMap.get(ch.parentId) ?? ch.parentId) : undefined;
 
     try {
@@ -185,7 +179,7 @@ export async function restoreBackup(
           parent: newParentId,
           reason: "Güvenlik Botu: Yedekten kanal geri yükleme",
         });
-        restoredChannels.push(`💬 #${ch.name}`);
+        restoredChannels.push(`${E.mail} #${ch.name}`);
       } else if (ch.type === ChannelType.GuildVoice) {
         await guild.channels.create({
           name: ch.name,
@@ -194,7 +188,7 @@ export async function restoreBackup(
           parent: newParentId,
           reason: "Güvenlik Botu: Yedekten kanal geri yükleme",
         });
-        restoredChannels.push(`🔊 ${ch.name}`);
+        restoredChannels.push(`${E.speaker} ${ch.name}`);
       } else if (ch.type === ChannelType.GuildAnnouncement) {
         await guild.channels.create({
           name: ch.name,
@@ -203,7 +197,7 @@ export async function restoreBackup(
           parent: newParentId,
           reason: "Güvenlik Botu: Yedekten kanal geri yükleme",
         });
-        restoredChannels.push(`📢 ${ch.name}`);
+        restoredChannels.push(`${E.announce} ${ch.name}`);
       }
     } catch {
       failedItems.push(`Kanal oluşturulamadı: #${ch.name}`);
@@ -211,12 +205,12 @@ export async function restoreBackup(
   }
 
   const parts: string[] = [];
-  if (restoredRoles.length > 0) parts.push(`✅ Geri yüklenen roller: ${restoredRoles.join(", ")}`);
-  if (restoredChannels.length > 0) parts.push(`✅ Geri yüklenen kanallar: ${restoredChannels.join(", ")}`);
-  if (failedItems.length > 0) parts.push(`⚠️ Başarısız: ${failedItems.join(", ")}`);
+  if (restoredRoles.length > 0) parts.push(`${E.success} Geri yüklenen roller: ${restoredRoles.join(", ")}`);
+  if (restoredChannels.length > 0) parts.push(`${E.success} Geri yüklenen kanallar: ${restoredChannels.join(", ")}`);
+  if (failedItems.length > 0) parts.push(`${E.warning} Başarısız: ${failedItems.join(", ")}`);
 
   const summary =
-    parts.length > 0 ? parts.join("\n") : "✅ Eksik kanal veya rol bulunamadı, yedek güncel.";
+    parts.length > 0 ? parts.join("\n") : `${E.success} Eksik kanal veya rol bulunamadı, yedek güncel.`;
 
   return { summary, restoredChannels, restoredRoles };
 }
@@ -231,7 +225,7 @@ export function scheduleNightlyBackup(client: Client): void {
         await sendLog(
           guild,
           buildEmbed({
-            title: "💾 Gece Yedeği Alındı",
+            title: `${E.backup} Gece Yedeği Alındı`,
             description: `Sunucu yedeği başarıyla alındı. Geri yüklemek için \`/restore\` komutunu kullanın.`,
             color: Colors.Green,
             fields: [

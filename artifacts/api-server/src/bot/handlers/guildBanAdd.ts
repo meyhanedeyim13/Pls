@@ -17,6 +17,7 @@ import {
 } from "../utils/actionTracker.js";
 import { buildEmbed, sendLog } from "../utils/logger.js";
 import { getYetkiliRolId } from "../utils/db.js";
+import { E } from "../utils/emojis.js";
 
 export function registerGuildBanAdd(client: Client): void {
   client.on(Events.GuildBanAdd, async (ban) => {
@@ -46,13 +47,9 @@ export function registerGuildBanAdd(client: Client): void {
       const executorRoleIds = member.roles.cache.map((r) => r.id);
       const yetkiliRolId = await getYetkiliRolId(guild.id);
 
-      // ── YETKİLİ KORUMA KONTROLÜ ──────────────────────────────────────────
-      // Executor özel kişi DEĞİL ama yetkili rolüne sahipse;
-      // hedef özel kişi veya yetkili ise → işlemi tersine çevir
       if (isNonSpecialYetkili(executor.id, executorRoleIds, yetkiliRolId)) {
         const targetRoleIds = getCachedMemberRoles(ban.user.id);
         if (isTargetProtected(ban.user.id, targetRoleIds, yetkiliRolId)) {
-          // Banı geri al
           try {
             await guild.members.unban(ban.user.id, "Güvenlik: Yetkili koruma sistemi — yasadışı ban");
           } catch { /* ignore */ }
@@ -60,26 +57,25 @@ export function registerGuildBanAdd(client: Client): void {
           await sendLog(
             guild,
             buildEmbed({
-              title: "🛡️ KORUMA — Yetkili Banı Engellendi",
+              title: `${E.protect} KORUMA — Yetkili Banı Engellendi`,
               description: `<@${executor.id}> kendi roldaşına veya üst yöneticiye ban uygulamaya çalıştı. **Ban otomatik kaldırıldı.**`,
               color: Colors.Orange,
               fields: [
                 { name: "Yürüten", value: `<@${executor.id}>`, inline: true },
                 { name: "Hedef", value: `<@${ban.user.id}> (${ban.user.tag})`, inline: true },
-                { name: "Durum", value: "⛔ Engellendi — Ban kaldırıldı", inline: false },
+                { name: "Durum", value: `${E.shield} Engellendi — Ban kaldırıldı`, inline: false },
               ],
             }),
           );
 
           try {
             await member.send(
-              "⛔ **Engellendi:** Kendi roldaşlarınıza veya üst yöneticilere moderasyon işlemi uygulayamazsınız!",
+              `${E.shield} **Engellendi:** Kendi roldaşlarınıza veya üst yöneticilere moderasyon işlemi uygulayamazsınız!`,
             );
           } catch { /* DM kapalı */ }
           return;
         }
       }
-      // ─────────────────────────────────────────────────────────────────────
 
       const exempt = isExemptExecutor(executor.id, executorRoleIds);
 
@@ -87,7 +83,7 @@ export function registerGuildBanAdd(client: Client): void {
         await sendLog(
           guild,
           buildEmbed({
-            title: "🔨 Ban İşlemi",
+            title: `${E.ban} Ban İşlemi`,
             description: `**${ban.user.tag}** sunucudan banlandı.`,
             color: Colors.Red,
             fields: [
@@ -100,7 +96,7 @@ export function registerGuildBanAdd(client: Client): void {
         if (isExemptRoleOnly(executor.id, executorRoleIds)) {
           try {
             await member.send(
-              `📋 **Bilgi:** **${ban.user.tag}** kullanıcısını banladın. Bu işlem kayıt altına alındı. Muaf olduğun için herhangi bir yaptırım uygulanmadı.`,
+              `${E.clipboard} **Bilgi:** **${ban.user.tag}** kullanıcısını banladın. Bu işlem kayıt altına alındı. Muaf olduğun için herhangi bir yaptırım uygulanmadı.`,
             );
           } catch { /* DM kapalı */ }
         }
@@ -112,7 +108,7 @@ export function registerGuildBanAdd(client: Client): void {
       await sendLog(
         guild,
         buildEmbed({
-          title: "🔨 Ban İşlemi",
+          title: `${E.ban} Ban İşlemi`,
           description: `**${ban.user.tag}** sunucudan banlandı.`,
           color: Colors.Red,
           fields: [
@@ -127,13 +123,13 @@ export function registerGuildBanAdd(client: Client): void {
         await sendLog(
           guild,
           buildEmbed({
-            title: "⚠️ UYARI — Son Hak",
+            title: `${E.warning} UYARI — Son Hak`,
             description: `<@${executor.id}> **2. işlemini** yaptı. Bir işlem daha yaparsa yetkileri alınacak!`,
             color: Colors.Yellow,
             fields: [{ name: "Uyarı", value: "Tek hakkın var!" }],
           }),
         );
-        try { await member.send("⚠️ **Uyarı:** Sunucuda 2. işlemini yaptın. Bir daha yaparsan yönetici yetkilerin alınacak!"); } catch { /* ignore */ }
+        try { await member.send(`${E.warning} **Uyarı:** Sunucuda 2. işlemini yaptın. Bir daha yaparsan yönetici yetkilerin alınacak!`); } catch { /* ignore */ }
       }
 
       if (exceeded) {
@@ -166,7 +162,7 @@ async function revokePermissions(
   await sendLog(
     guild,
     buildEmbed({
-      title: "🚨 YETKİ ALINDI — Limit Aşıldı",
+      title: `${E.security} YETKİ ALINDI — Limit Aşıldı`,
       description: `<@${member.id}> 3. işlemini yaptı (${triggerType}). Yönetici rolleri alındı.`,
       color: Colors.DarkRed,
       fields: [
@@ -178,5 +174,5 @@ async function revokePermissions(
     }),
   );
 
-  try { await member.send("🚨 **Yetkilerin alındı!** İşlem limitini aştığın için yönetici rolüerin kaldırıldı."); } catch { /* ignore */ }
+  try { await member.send(`${E.security} **Yetkilerin alındı!** İşlem limitini aştığın için yönetici rollerin kaldırıldı.`); } catch { /* ignore */ }
 }

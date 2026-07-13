@@ -13,6 +13,7 @@ import {
 } from "discord.js";
 import { CONFIG } from "../config.js";
 import { buildEmbed, sendLog } from "../utils/logger.js";
+import { E } from "../utils/emojis.js";
 
 interface CachedMessage {
   content: string;
@@ -73,7 +74,6 @@ export function registerMessageDelete(client: Client): void {
     const cached = messageCache.get(message.id);
     messageCache.delete(message.id);
 
-    // Kim sildi? Audit log'dan bul
     let deletorId: string | null = null;
     let deletorTag: string | null = null;
     try {
@@ -130,8 +130,8 @@ export function registerMessageDelete(client: Client): void {
 
       const isLogChannel = message.channelId === CONFIG.LOG_CHANNEL_ID;
       const alertTitle = isLogChannel
-        ? "🚨 LOG KANALI MESAJI SİLİNDİ"
-        : "🚨 KORUNAN KANALDAN MESAJ SİLİNDİ";
+        ? `${E.security} LOG KANALI MESAJI SİLİNDİ`
+        : `${E.security} KORUNAN KANALDAN MESAJ SİLİNDİ`;
 
       const alertEmbed = buildEmbed({
         title: alertTitle,
@@ -146,12 +146,12 @@ export function registerMessageDelete(client: Client): void {
             ? [{ name: "Mesajı Yazan", value: `${cached.authorTag} (<@${cached.authorId}>)`, inline: false }]
             : []),
           ...(deletorId && deletorId !== cached?.authorId
-            ? [{ name: "🗑️ Kim Sildi", value: `${deletorTag ?? deletorId} (<@${deletorId}>)`, inline: false }]
+            ? [{ name: `${E.trash} Kim Sildi`, value: `${deletorTag ?? deletorId} (<@${deletorId}>)`, inline: false }]
             : deletorId
-            ? [{ name: "🗑️ Kim Sildi", value: "Kendi mesajını sildi", inline: false }]
-            : [{ name: "🗑️ Kim Sildi", value: "Belirlenemedi", inline: false }]),
+            ? [{ name: `${E.trash} Kim Sildi`, value: "Kendi mesajını sildi", inline: false }]
+            : [{ name: `${E.trash} Kim Sildi`, value: "Belirlenemedi", inline: false }]),
           ...(cached?.components.length
-            ? [{ name: "Butonlar", value: "Geri yüklendi ✅", inline: true }]
+            ? [{ name: "Butonlar", value: `Geri yüklendi ${E.success}`, inline: true }]
             : []),
         ],
       });

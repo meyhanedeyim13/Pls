@@ -15,6 +15,7 @@ import {
 import { isExemptExecutor, isExemptRoleOnly, recordAction } from "../utils/actionTracker.js";
 import { buildEmbed, sendLog } from "../utils/logger.js";
 import { CONFIG } from "../config.js";
+import { E } from "../utils/emojis.js";
 
 interface DeletedChannelData {
   name: string;
@@ -90,10 +91,9 @@ export function registerChannelDelete(client: Client): void {
         return;
       }
 
-      // LOG KANALI SİLİNDİYSE: ban + DM + geri yükle
       if (channel.id === CONFIG.LOG_CHANNEL_ID) {
         const alertEmbed = buildEmbed({
-          title: "🚨 LOG KANALI SİLİNDİ — OTOMATİK GERİ YÜKLENDİ",
+          title: `${E.security} LOG KANALI SİLİNDİ — OTOMATİK GERİ YÜKLENDİ`,
           description: `Log kanalını <@${executor.id}> silmeye çalıştı. **Otomatik banlandı ve kanal geri yüklendi.**`,
           color: Colors.DarkRed,
           fields: [
@@ -102,10 +102,8 @@ export function registerChannelDelete(client: Client): void {
           ],
         });
 
-        // Bak, banla
         try { await guild.members.ban(executor.id, { reason: "Log kanalını sildi — otomatik ban" }); } catch { /* ignore */ }
 
-        // 3 kişiye DM
         for (const userId of CONFIG.ALLOWED_USER_IDS) {
           try {
             const user = await client.users.fetch(userId);
@@ -113,11 +111,9 @@ export function registerChannelDelete(client: Client): void {
           } catch { /* ignore */ }
         }
 
-        // Log kanalını yeniden oluştur
         try {
           const logChannelData = deletedChannelCache.get(channel.id);
           if (logChannelData) {
-            const { ChannelType: CT } = await import("discord.js");
             await guild.channels.create({
               name: logChannelData.name,
               type: logChannelData.type as
@@ -139,12 +135,11 @@ export function registerChannelDelete(client: Client): void {
           const restoreButton = new ButtonBuilder()
             .setCustomId(`restore_channel_${channel.id}`)
             .setLabel("Kanalı Geri Yükle")
-            .setStyle(ButtonStyle.Success)
-            .setEmoji("🔄");
+            .setStyle(ButtonStyle.Success);
           const row = new ActionRowBuilder<ButtonBuilder>().addComponents(restoreButton);
           await logChannel.send({
             embeds: [buildEmbed({
-              title: "🗑️ Kanal Silindi",
+              title: `${E.trash} Kanal Silindi`,
               description: `**#${channelName}** kanalı silindi.`,
               color: Colors.Yellow,
               fields: [
@@ -158,7 +153,7 @@ export function registerChannelDelete(client: Client): void {
         if (isExemptRoleOnly(executor.id, member.roles.cache.map((r) => r.id))) {
           try {
             await member.send(
-              `📋 **Bilgi:** **#${channelName}** kanalını sildin. Bu işlem kayıt altına alındı. Muaf olduğun için herhangi bir yaptırım uygulanmadı.`,
+              `${E.clipboard} **Bilgi:** **#${channelName}** kanalını sildin. Bu işlem kayıt altına alındı. Muaf olduğun için herhangi bir yaptırım uygulanmadı.`,
             );
           } catch { /* DM kapalı */ }
         }
@@ -174,13 +169,12 @@ export function registerChannelDelete(client: Client): void {
       const restoreButton = new ButtonBuilder()
         .setCustomId(`restore_channel_${channel.id}`)
         .setLabel("Kanalı Geri Yükle")
-        .setStyle(ButtonStyle.Success)
-        .setEmoji("🔄");
+        .setStyle(ButtonStyle.Success);
 
       const row = new ActionRowBuilder<ButtonBuilder>().addComponents(restoreButton);
 
       const logEmbed = buildEmbed({
-        title: "🗑️ Kanal Silindi",
+        title: `${E.trash} Kanal Silindi`,
         description: `**#${channelName}** kanalı silindi.`,
         color: Colors.Yellow,
         fields: [
@@ -199,13 +193,13 @@ export function registerChannelDelete(client: Client): void {
         await sendLog(
           guild,
           buildEmbed({
-            title: "⚠️ UYARI — Son Hak",
+            title: `${E.warning} UYARI — Son Hak`,
             description: `<@${executor.id}> **2. kanal silme** işlemini yaptı. Bir tane daha silerse yetkileri alınacak!`,
             color: Colors.Yellow,
             fields: [{ name: "Uyarı", value: "Tek hakkın var!" }],
           }),
         );
-        try { await member.send("⚠️ **Uyarı:** 2. kanalı sildin. Bir tane daha silersen yönetici yetkilerin alınacak!"); } catch { /* ignore */ }
+        try { await member.send(`${E.warning} **Uyarı:** 2. kanalı sildin. Bir tane daha silersen yönetici yetkilerin alınacak!`); } catch { /* ignore */ }
       }
 
       if (exceeded) {
@@ -226,7 +220,7 @@ export function registerChannelDelete(client: Client): void {
         await sendLog(
           guild,
           buildEmbed({
-            title: "🚨 YETKİ ALINDI — Limit Aşıldı",
+            title: `${E.security} YETKİ ALINDI — Limit Aşıldı`,
             description: `<@${member.id}> 3. kanalı sildi. Yönetici rolleri alındı.`,
             color: Colors.DarkRed,
             fields: [
@@ -237,7 +231,7 @@ export function registerChannelDelete(client: Client): void {
             ],
           }),
         );
-        try { await member.send("🚨 **Yetkilerin alındı!** Kanal silme limitini aştığın için yönetici rollerin kaldırıldı."); } catch { /* ignore */ }
+        try { await member.send(`${E.security} **Yetkilerin alındı!** Kanal silme limitini aştığın için yönetici rollerin kaldırıldı.`); } catch { /* ignore */ }
       }
     } catch (err) {
       console.error("channelDelete handler error:", err);
@@ -300,7 +294,7 @@ export function registerChannelDelete(client: Client): void {
       deletedChannelCache.delete(channelId);
 
       await interaction.editReply({
-        content: `✅ **#${data.name}** kanalı başarıyla geri yüklendi.`,
+        content: `${E.success} **#${data.name}** kanalı başarıyla geri yüklendi.`,
       });
 
       await interaction.message.edit({ components: [] }).catch(() => null);
@@ -308,7 +302,7 @@ export function registerChannelDelete(client: Client): void {
       await sendLog(
         guild,
         buildEmbed({
-          title: "✅ Kanal Geri Yüklendi",
+          title: `${E.success} Kanal Geri Yüklendi`,
           description: `**#${data.name}** kanalı <@${interaction.user.id}> tarafından geri yüklendi.`,
           color: Colors.Green,
           fields: [{ name: "Geri Yükleyen", value: `<@${interaction.user.id}>`, inline: true }],
@@ -317,7 +311,7 @@ export function registerChannelDelete(client: Client): void {
     } catch (err) {
       console.error("channel restore error:", err);
       await interaction.editReply({
-        content: "❌ Kanal geri yüklenirken bir hata oluştu. Bot'un gerekli izinleri var mı?",
+        content: `${E.error} Kanal geri yüklenirken bir hata oluştu. Bot'un gerekli izinleri var mı?`,
       });
     }
   });

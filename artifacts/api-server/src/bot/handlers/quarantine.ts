@@ -2,6 +2,7 @@ import { type Client, Events, Colors } from "discord.js";
 import { CONFIG } from "../config.js";
 import { buildEmbed, sendLog, sendPublicLog } from "../utils/logger.js";
 import { query } from "../utils/db.js";
+import { E } from "../utils/emojis.js";
 
 interface QuarantineRow {
   user_id: string;
@@ -93,7 +94,7 @@ export async function applyQuarantineToMember(
     await sendLog(
       guild,
       buildEmbed({
-        title: "🔒 KARANTİNA — Manuel Uygulama",
+        title: `${E.lock} KARANTİNA — Manuel Uygulama`,
         description: `<@${userId}> anında karantinaya alındı.`,
         color: Colors.Purple,
         fields: [
@@ -158,7 +159,7 @@ export function registerQuarantine(client: Client): void {
       await sendLog(
         guild,
         buildEmbed({
-          title: "🔒 KARANTİNA — İzleme Listesi Kullanıcısı",
+          title: `${E.lock} KARANTİNA — İzleme Listesi Kullanıcısı`,
           description: `<@${member.id}> sunucuya katıldı ve karantinaya alındı.`,
           color: Colors.Purple,
           fields: [
@@ -191,7 +192,7 @@ export function registerQuarantine(client: Client): void {
       await sendPublicLog(
         guild,
         buildEmbed({
-          title: "🔒 Kullanıcı Karantinaya Alındı",
+          title: `${E.lock} Kullanıcı Karantinaya Alındı`,
           description: `<@${member.id}> sunucuya katıldığında karantinaya alındı.`,
           color: Colors.Purple,
           fields: [{ name: "Sebep", value: info?.reason ?? "Belirtilmedi" }],

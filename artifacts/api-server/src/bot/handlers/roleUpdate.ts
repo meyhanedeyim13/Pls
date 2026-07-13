@@ -6,6 +6,7 @@ import {
 } from "discord.js";
 import { isExemptExecutor, isExemptRoleOnly } from "../utils/actionTracker.js";
 import { buildEmbed, sendLog } from "../utils/logger.js";
+import { E } from "../utils/emojis.js";
 
 export function registerRoleUpdate(client: Client): void {
   client.on(Events.GuildMemberUpdate, async (oldMember, newMember) => {
@@ -19,7 +20,6 @@ export function registerRoleUpdate(client: Client): void {
 
     if (addedRoles.length === 0 && removedRoles.length === 0) return;
 
-    // Daha kısa bekleme + daha geniş zaman penceresi
     await new Promise((r) => setTimeout(r, 500));
 
     const tryFetch = async (attempt: number) => {
@@ -67,8 +67,8 @@ export function registerRoleUpdate(client: Client): void {
       const fields = [
         { name: "Yürüten", value: `<@${executor.id}>`, inline: true },
         { name: "Hedef", value: `<@${newMember.id}>`, inline: true },
-        ...(addedNames ? [{ name: "➕ Verilen Roller", value: addedNames, inline: false }] : []),
-        ...(removedNames ? [{ name: "➖ Alınan Roller", value: removedNames, inline: false }] : []),
+        ...(addedNames ? [{ name: `${E.plus} Verilen Roller`, value: addedNames, inline: false }] : []),
+        ...(removedNames ? [{ name: `${E.minus} Alınan Roller`, value: removedNames, inline: false }] : []),
         ...(exempt
           ? [{ name: "İzleme", value: "Muaf — sayılmadı", inline: true }]
           : [{ name: "İzleme", value: "Sayaca işlendi", inline: true }]),
@@ -77,7 +77,7 @@ export function registerRoleUpdate(client: Client): void {
       await sendLog(
         guild,
         buildEmbed({
-          title: "🎭 Rol Değişikliği",
+          title: `${E.roles} Rol Değişikliği`,
           description: `<@${newMember.id}> için rol güncellendi.`,
           color: exempt ? Colors.Grey : Colors.Blue,
           fields,
@@ -87,10 +87,10 @@ export function registerRoleUpdate(client: Client): void {
       if (isExemptRoleOnly(executor.id, execRoleIds)) {
         try {
           const parts: string[] = [];
-          if (addedNames) parts.push(`➕ Verilen: ${addedNames}`);
-          if (removedNames) parts.push(`➖ Alınan: ${removedNames}`);
+          if (addedNames) parts.push(`${E.plus} Verilen: ${addedNames}`);
+          if (removedNames) parts.push(`${E.minus} Alınan: ${removedNames}`);
           await execMember.send(
-            `📋 **Bilgi:** <@${newMember.id}> için rol değişikliği yaptın. Bu işlem kayıt altına alındı. Muaf olduğun için herhangi bir yaptırım uygulanmadı.\n${parts.join("\n")}`,
+            `${E.clipboard} **Bilgi:** <@${newMember.id}> için rol değişikliği yaptın. Bu işlem kayıt altına alındı. Muaf olduğun için herhangi bir yaptırım uygulanmadı.\n${parts.join("\n")}`,
           );
         } catch { /* DM kapalı */ }
       }

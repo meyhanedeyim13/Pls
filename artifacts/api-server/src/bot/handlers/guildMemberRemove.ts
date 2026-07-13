@@ -16,12 +16,12 @@ import {
 } from "../utils/actionTracker.js";
 import { buildEmbed, sendLog } from "../utils/logger.js";
 import { getYetkiliRolId } from "../utils/db.js";
+import { E } from "../utils/emojis.js";
 
 export function registerGuildMemberRemove(client: Client): void {
   client.on(Events.GuildMemberRemove, async (member) => {
     const guild = member.guild;
 
-    // Ayrılan üyenin rollerini cache'le (GuildBanAdd için de kullanılır)
     if ("roles" in member && member.roles) {
       cacheMemberRoles(member.id, member.roles.cache.map((r) => r.id));
     }
@@ -54,7 +54,6 @@ export function registerGuildMemberRemove(client: Client): void {
       const executorRoleIds = execMember.roles.cache.map((r) => r.id);
       const yetkiliRolId = await getYetkiliRolId(guild.id);
 
-      // ── YETKİLİ KORUMA KONTROLÜ ──────────────────────────────────────────
       if (isNonSpecialYetkili(executor.id, executorRoleIds, yetkiliRolId)) {
         const targetRoleIds = "roles" in member && member.roles
           ? member.roles.cache.map((r) => r.id)
@@ -63,26 +62,25 @@ export function registerGuildMemberRemove(client: Client): void {
           await sendLog(
             guild,
             buildEmbed({
-              title: "🛡️ KORUMA — Yetkili Kick'i Engellendi",
+              title: `${E.protect} KORUMA — Yetkili Kick'i Engellendi`,
               description: `<@${executor.id}> kendi roldaşına veya üst yöneticiye kick uygulamaya çalıştı.`,
               color: Colors.Orange,
               fields: [
                 { name: "Yürüten", value: `<@${executor.id}>`, inline: true },
                 { name: "Hedef", value: `<@${member.id}> (${member.user?.tag ?? member.id})`, inline: true },
-                { name: "Durum", value: "⛔ Engellendi — Kayıt altına alındı", inline: false },
+                { name: "Durum", value: `${E.shield} Engellendi — Kayıt altına alındı`, inline: false },
               ],
             }),
           );
 
           try {
             await execMember.send(
-              "⛔ **Engellendi:** Kendi roldaşlarınıza veya üst yöneticilere moderasyon işlemi uygulayamazsınız!",
+              `${E.shield} **Engellendi:** Kendi roldaşlarınıza veya üst yöneticilere moderasyon işlemi uygulayamazsınız!`,
             );
           } catch { /* DM kapalı */ }
           return;
         }
       }
-      // ─────────────────────────────────────────────────────────────────────
 
       const exempt = isExemptExecutor(executor.id, executorRoleIds);
 
@@ -90,7 +88,7 @@ export function registerGuildMemberRemove(client: Client): void {
         await sendLog(
           guild,
           buildEmbed({
-            title: "👢 Kick İşlemi",
+            title: `${E.kick} Kick İşlemi`,
             description: `**${member.user?.tag ?? member.id}** sunucudan atıldı.`,
             color: Colors.Orange,
             fields: [
@@ -102,7 +100,7 @@ export function registerGuildMemberRemove(client: Client): void {
         if (isExemptRoleOnly(executor.id, executorRoleIds)) {
           try {
             await execMember.send(
-              `📋 **Bilgi:** **${member.user?.tag ?? member.id}** kullanıcısını attın. Bu işlem kayıt altına alındı. Muaf olduğun için herhangi bir yaptırım uygulanmadı.`,
+              `${E.clipboard} **Bilgi:** **${member.user?.tag ?? member.id}** kullanıcısını attın. Bu işlem kayıt altına alındı. Muaf olduğun için herhangi bir yaptırım uygulanmadı.`,
             );
           } catch { /* DM kapalı */ }
         }
@@ -114,7 +112,7 @@ export function registerGuildMemberRemove(client: Client): void {
       await sendLog(
         guild,
         buildEmbed({
-          title: "👢 Kick İşlemi",
+          title: `${E.kick} Kick İşlemi`,
           description: `**${member.user?.tag ?? member.id}** sunucudan atıldı.`,
           color: Colors.Orange,
           fields: [
@@ -128,13 +126,13 @@ export function registerGuildMemberRemove(client: Client): void {
         await sendLog(
           guild,
           buildEmbed({
-            title: "⚠️ UYARI — Son Hak",
+            title: `${E.warning} UYARI — Son Hak`,
             description: `<@${executor.id}> **2. işlemini** yaptı. Bir işlem daha yaparsa yetkileri alınacak!`,
             color: Colors.Yellow,
             fields: [{ name: "Uyarı", value: "Tek hakkın var!" }],
           }),
         );
-        try { await execMember.send("⚠️ **Uyarı:** Sunucuda 2. işlemini yaptın. Bir daha yaparsan yönetici yetkilerin alınacak!"); } catch { /* ignore */ }
+        try { await execMember.send(`${E.warning} **Uyarı:** Sunucuda 2. işlemini yaptın. Bir daha yaparsan yönetici yetkilerin alınacak!`); } catch { /* ignore */ }
       }
 
       if (exceeded) {
@@ -155,7 +153,7 @@ export function registerGuildMemberRemove(client: Client): void {
         await sendLog(
           guild,
           buildEmbed({
-            title: "🚨 YETKİ ALINDI — Limit Aşıldı",
+            title: `${E.security} YETKİ ALINDI — Limit Aşıldı`,
             description: `<@${execMember.id}> 3. işlemini yaptı (kick). Yönetici rolleri alındı.`,
             color: Colors.DarkRed,
             fields: [
@@ -167,7 +165,7 @@ export function registerGuildMemberRemove(client: Client): void {
           }),
         );
 
-        try { await execMember.send("🚨 **Yetkilerin alındı!** İşlem limitini aştığın için yönetici rolüerin kaldırıldı."); } catch { /* ignore */ }
+        try { await execMember.send(`${E.security} **Yetkilerin alındı!** İşlem limitini aştığın için yönetici rollerin kaldırıldı.`); } catch { /* ignore */ }
       }
     } catch (err) {
       console.error("guildMemberRemove handler error:", err);

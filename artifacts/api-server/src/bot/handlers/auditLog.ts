@@ -5,16 +5,7 @@ import {
   Colors,
 } from "discord.js";
 import { buildEmbed, sendLog } from "../utils/logger.js";
-
-// Bu handler zaten başka handler'larda ele alınan olayları ATLAR:
-// MemberBanAdd   → guildBanAdd.ts
-// MemberKick     → guildMemberRemove.ts
-// MessageDelete  → messageDelete.ts + messageLog.ts
-// MessageUpdate  → messageLog.ts
-// ChannelCreate/Delete/Update → channelCreate.ts, channelDelete.ts, serverEvents.ts
-// RoleCreate/Delete/Update → serverEvents.ts
-// GuildUpdate    → serverEvents.ts
-// MemberUpdate   → serverEvents.ts, roleUpdate.ts
+import { E } from "../utils/emojis.js";
 
 const SKIP_EVENTS = new Set<AuditLogEvent>([
   AuditLogEvent.MemberBanAdd,
@@ -46,10 +37,7 @@ function fmt(id: string | null | undefined, type: "user" | "role" | "channel" = 
 export function registerAuditLog(client: Client): void {
   client.on(Events.GuildAuditLogEntryCreate, async (entry, guild) => {
     try {
-      // Zaten işlenen olayları atla
       if (SKIP_EVENTS.has(entry.action)) return;
-
-      // Botun kendi işlemlerini atla
       if (entry.executor?.id === client.user?.id) return;
 
       const executor = entry.executor;
@@ -66,9 +54,8 @@ export function registerAuditLog(client: Client): void {
 
       switch (entry.action) {
 
-        // ── ÜYE ──────────────────────────────────────────────────────────────
         case AuditLogEvent.MemberBanRemove:
-          title = "🔓 Ban Kaldırıldı";
+          title = `${E.shield} Ban Kaldırıldı`;
           description = `${fmt((target as { id?: string })?.id)} kullanıcısının banı kaldırıldı.`;
           color = Colors.Green;
           fields.push({ name: "Hedef", value: fmt((target as { id?: string })?.id), inline: true });
@@ -76,7 +63,7 @@ export function registerAuditLog(client: Client): void {
           break;
 
         case AuditLogEvent.MemberPrune:
-          title = "🧹 Üye Temizleme";
+          title = `${E.broom} Üye Temizleme`;
           description = `Belirli gün boyunca aktif olmayan üyeler sunucudan atıldı.`;
           color = Colors.Orange;
           fields.push({ name: "Silinen Gün", value: String((entry.extra as { deleteMemberDays?: number })?.deleteMemberDays ?? "?"), inline: true });
@@ -84,23 +71,21 @@ export function registerAuditLog(client: Client): void {
           break;
 
         case AuditLogEvent.MemberDisconnect:
-          title = "🔌 Ses Kanalı Bağlantısı Kesildi";
+          title = `${E.tool} Ses Kanalı Bağlantısı Kesildi`;
           description = `Bir veya daha fazla üyenin ses kanalı bağlantısı zorla kesildi.`;
           color = Colors.Yellow;
           fields.push({ name: "Etkilenen", value: String((entry.extra as { count?: number })?.count ?? "?"), inline: true });
           break;
 
-        // ── BOT ──────────────────────────────────────────────────────────────
         case AuditLogEvent.BotAdd:
-          title = "🤖 Bot Eklendi";
+          title = `${E.bot} Bot Eklendi`;
           description = `Sunucuya yeni bir bot eklendi.`;
           color = Colors.Blue;
           fields.push({ name: "Bot", value: fmt((target as { id?: string })?.id), inline: true });
           break;
 
-        // ── DAVET ────────────────────────────────────────────────────────────
         case AuditLogEvent.InviteCreate:
-          title = "📨 Davet Oluşturuldu";
+          title = `${E.mail} Davet Oluşturuldu`;
           description = `Yeni bir davet linki oluşturuldu.`;
           color = Colors.Blurple;
           fields.push({
@@ -116,7 +101,7 @@ export function registerAuditLog(client: Client): void {
           break;
 
         case AuditLogEvent.InviteDelete:
-          title = "🗑️ Davet Silindi";
+          title = `${E.trash} Davet Silindi`;
           description = `Bir davet linki silindi.`;
           color = Colors.Orange;
           fields.push({
@@ -126,119 +111,113 @@ export function registerAuditLog(client: Client): void {
           });
           break;
 
-        // ── WEBHOOK ──────────────────────────────────────────────────────────
         case AuditLogEvent.WebhookCreate:
-          title = "🔗 Webhook Oluşturuldu";
+          title = `${E.link} Webhook Oluşturuldu`;
           description = `Yeni bir webhook oluşturuldu.`;
           color = Colors.Blue;
           fields.push({ name: "Webhook Adı", value: String((entry.changes?.find((c) => c.key === "name")?.new) ?? "Bilinmiyor"), inline: true });
           break;
 
         case AuditLogEvent.WebhookUpdate:
-          title = "🔗 Webhook Güncellendi";
+          title = `${E.link} Webhook Güncellendi`;
           description = `Bir webhook güncellendi.`;
           color = Colors.Yellow;
           break;
 
         case AuditLogEvent.WebhookDelete:
-          title = "🔗 Webhook Silindi";
+          title = `${E.link} Webhook Silindi`;
           description = `Bir webhook silindi.`;
           color = Colors.Red;
           break;
 
-        // ── EMOJİ / STİCKER ──────────────────────────────────────────────────
         case AuditLogEvent.EmojiCreate:
-          title = "😀 Emoji Eklendi";
+          title = `${E.emoji} Emoji Eklendi`;
           description = `Sunucuya yeni emoji eklendi.`;
           color = Colors.Green;
           fields.push({ name: "Emoji Adı", value: String((entry.changes?.find((c) => c.key === "name")?.new) ?? "?"), inline: true });
           break;
 
         case AuditLogEvent.EmojiUpdate:
-          title = "😀 Emoji Güncellendi";
+          title = `${E.emoji} Emoji Güncellendi`;
           description = `Bir emoji güncellendi.`;
           color = Colors.Yellow;
           fields.push({ name: "Yeni Ad", value: String((entry.changes?.find((c) => c.key === "name")?.new) ?? "?"), inline: true });
           break;
 
         case AuditLogEvent.EmojiDelete:
-          title = "😀 Emoji Silindi";
+          title = `${E.emoji} Emoji Silindi`;
           description = `Bir emoji sunucudan silindi.`;
           color = Colors.Red;
           fields.push({ name: "Emoji Adı", value: String((entry.changes?.find((c) => c.key === "name")?.old) ?? "?"), inline: true });
           break;
 
         case AuditLogEvent.StickerCreate:
-          title = "🎨 Sticker Eklendi";
+          title = `${E.emoji} Sticker Eklendi`;
           description = `Sunucuya yeni sticker eklendi.`;
           color = Colors.Green;
           fields.push({ name: "Sticker Adı", value: String((entry.changes?.find((c) => c.key === "name")?.new) ?? "?"), inline: true });
           break;
 
         case AuditLogEvent.StickerUpdate:
-          title = "🎨 Sticker Güncellendi";
+          title = `${E.emoji} Sticker Güncellendi`;
           description = `Bir sticker güncellendi.`;
           color = Colors.Yellow;
           break;
 
         case AuditLogEvent.StickerDelete:
-          title = "🎨 Sticker Silindi";
+          title = `${E.emoji} Sticker Silindi`;
           description = `Bir sticker sunucudan silindi.`;
           color = Colors.Red;
           fields.push({ name: "Sticker Adı", value: String((entry.changes?.find((c) => c.key === "name")?.old) ?? "?"), inline: true });
           break;
 
-        // ── THREAD ───────────────────────────────────────────────────────────
         case AuditLogEvent.ThreadCreate:
-          title = "🧵 Thread Oluşturuldu";
+          title = `${E.emoji} Thread Oluşturuldu`;
           description = `Yeni bir thread açıldı.`;
           color = Colors.Blue;
           fields.push({ name: "Thread", value: fmt((target as { id?: string })?.id, "channel"), inline: true });
           break;
 
         case AuditLogEvent.ThreadDelete:
-          title = "🧵 Thread Silindi";
+          title = `${E.emoji} Thread Silindi`;
           description = `Bir thread silindi.`;
           color = Colors.Red;
           fields.push({ name: "Thread Adı", value: String((entry.changes?.find((c) => c.key === "name")?.old) ?? "?"), inline: true });
           break;
 
         case AuditLogEvent.ThreadUpdate:
-          title = "🧵 Thread Güncellendi";
+          title = `${E.emoji} Thread Güncellendi`;
           description = `Bir thread güncellendi.`;
           color = Colors.Yellow;
           fields.push({ name: "Thread", value: fmt((target as { id?: string })?.id, "channel"), inline: true });
           break;
 
-        // ── ENTEGRASYON ──────────────────────────────────────────────────────
         case AuditLogEvent.IntegrationCreate:
-          title = "🔌 Entegrasyon Eklendi";
+          title = `${E.tool} Entegrasyon Eklendi`;
           description = `Sunucuya yeni entegrasyon eklendi.`;
           color = Colors.Blue;
           break;
 
         case AuditLogEvent.IntegrationDelete:
-          title = "🔌 Entegrasyon Silindi";
+          title = `${E.tool} Entegrasyon Silindi`;
           description = `Bir entegrasyon sunucudan kaldırıldı.`;
           color = Colors.Red;
           break;
 
-        // ── SAHNE ────────────────────────────────────────────────────────────
         case AuditLogEvent.StageInstanceCreate:
-          title = "🎙️ Sahne Başlatıldı";
+          title = `${E.stage} Sahne Başlatıldı`;
           description = `Bir sahne etkinliği başlatıldı.`;
           color = Colors.Blue;
           break;
 
         case AuditLogEvent.StageInstanceDelete:
-          title = "🎙️ Sahne Sona Erdi";
+          title = `${E.stage} Sahne Sona Erdi`;
           description = `Bir sahne etkinliği sona erdi.`;
           color = Colors.Grey;
           break;
 
-        // ── SES DURUMU ───────────────────────────────────────────────────────
         case AuditLogEvent.MemberMove:
-          title = "🔊 Ses Kanalı Taşıma";
+          title = `${E.speaker} Ses Kanalı Taşıma`;
           description = `Üyeler başka bir ses kanalına taşındı.`;
           color = Colors.Yellow;
           fields.push({ name: "Kanal", value: fmt((entry.extra as { channel?: { id?: string } })?.channel?.id, "channel"), inline: true });
@@ -246,8 +225,7 @@ export function registerAuditLog(client: Client): void {
           break;
 
         default:
-          // Bilinmeyen/işlenmeyen olaylar için genel log
-          title = `📋 Denetim Kaydı`;
+          title = `${E.clipboard} Denetim Kaydı`;
           description = `Yeni bir sunucu işlemi gerçekleşti. (Olay: \`${AuditLogEvent[entry.action] ?? entry.action}\`)`;
           color = Colors.Grey;
           break;

@@ -13,6 +13,7 @@ import { takeBackup, restoreBackup, getBackup } from "./backup.js";
 import { getYetkiliRolId, setYetkiliRolId, getLinkEngelAktif } from "../utils/db.js";
 import { toggleLinkEngel } from "./linkGuard.js";
 import { resetUser, getRecord } from "../utils/actionTracker.js";
+import { E } from "../utils/emojis.js";
 
 const commands = [
   new SlashCommandBuilder()
@@ -104,23 +105,21 @@ export async function registerSlashCommands(client: Client): Promise<void> {
     try {
       const isSpecial = (CONFIG.ALLOWED_USER_IDS as readonly string[]).includes(interaction.user.id);
 
-      // ── Tüm komutlar için sadece 3 kurucu kontrolü ──────────────────────────
       if (!isSpecial) {
         await interaction.reply({
-          embeds: [buildEmbed({ title: "❌ Yetersiz Yetki", description: "Bu komutu kullanma yetkiniz yok.", color: Colors.Red })],
+          embeds: [buildEmbed({ title: `${E.error} Yetersiz Yetki`, description: "Bu komutu kullanma yetkiniz yok.", color: Colors.Red })],
           ephemeral: true,
         });
         return;
       }
 
-      // ── KOMUT İŞLEYİCİLER ───────────────────────────────────────────────────
       switch (commandName) {
         case "ayarla-yetkilirol": {
           const rol = interaction.options.getRole("rol", true);
           await setYetkiliRolId(guild.id, rol.id);
           await interaction.reply({
             embeds: [buildEmbed({
-              title: "✅ Yetkili Rolü Ayarlandı",
+              title: `${E.success} Yetkili Rolü Ayarlandı`,
               description: `**${rol.name}** rolü yetkili rolü olarak kaydedildi.`,
               color: Colors.Green,
               fields: [
@@ -140,7 +139,7 @@ export async function registerSlashCommands(client: Client): Promise<void> {
           await toggleLinkEngel(guild.id, aktif);
 
           const embed = buildEmbed({
-            title: aktif ? "🔗 Link Engeli Açıldı" : "✅ Link Engeli Kapatıldı",
+            title: aktif ? `${E.link} Link Engeli Açıldı` : `${E.success} Link Engeli Kapatıldı`,
             description: aktif
               ? "Artık **3 kurucu kişi dışında** hiç kimse link paylaşamaz. Linkler otomatik silinir ve log kanalına düşer."
               : "Link engeli kaldırıldı. Herkes link paylaşabilir.",
@@ -156,20 +155,20 @@ export async function registerSlashCommands(client: Client): Promise<void> {
           const yetkiliRolId = await getYetkiliRolId(guild.id);
           const linkEngelAktif = await getLinkEngelAktif(guild.id);
           const yetkiliRolStr = yetkiliRolId ? `<@&${yetkiliRolId}>` : "Henüz ayarlanmadı (`/ayarla-yetkilirol`)";
-          const botDurum = yetkiliRolId ? "🟢 Aktif" : "🔴 Kurulum Gerekli";
+          const botDurum = yetkiliRolId ? `${E.inactive} Aktif` : `${E.active} Kurulum Gerekli`;
 
           await interaction.reply({
             embeds: [buildEmbed({
-              title: "📖 Bot Komutları",
+              title: `${E.info} Bot Komutları`,
               description: "Güvenlik Botu — Tüm Slash Komutları",
               color: Colors.Blurple,
               fields: [
-                { name: "⚙️ Ayarlar", value: "`/ayarla-yetkilirol [rol]`\n`/link-engel [aç/kapat]`", inline: false },
-                { name: "💾 Yedek", value: "`/yedek-al` — Anlık yedek\n`/restore` — Eksik kanal+rolleri geri yükle\n`/yedek-bilgi` — Son yedek bilgisi", inline: false },
-                { name: "📊 Sayaç", value: "`/sayac-goruntule @kullanıcı`\n`/sayac-sifirla @kullanıcı`", inline: false },
-                { name: "🤖 Bot Durumu", value: botDurum, inline: true },
-                { name: "🛡️ Yetkili Rolü", value: yetkiliRolStr, inline: true },
-                { name: "🔗 Link Engeli", value: linkEngelAktif ? "🔴 Aktif" : "🟢 Kapalı", inline: true },
+                { name: `${E.settings} Ayarlar`, value: "`/ayarla-yetkilirol [rol]`\n`/link-engel [aç/kapat]`", inline: false },
+                { name: `${E.backup} Yedek`, value: "`/yedek-al` — Anlık yedek\n`/restore` — Eksik kanal+rolleri geri yükle\n`/yedek-bilgi` — Son yedek bilgisi", inline: false },
+                { name: `${E.stats} Sayaç`, value: "`/sayac-goruntule @kullanıcı`\n`/sayac-sifirla @kullanıcı`", inline: false },
+                { name: `${E.bot} Bot Durumu`, value: botDurum, inline: true },
+                { name: `${E.protect} Yetkili Rolü`, value: yetkiliRolStr, inline: true },
+                { name: `${E.link} Link Engeli`, value: linkEngelAktif ? `${E.active} Aktif` : `${E.inactive} Kapalı`, inline: true },
               ],
             })],
             ephemeral: true,
@@ -183,7 +182,7 @@ export async function registerSlashCommands(client: Client): Promise<void> {
           const date = new Date(backup.takenAt).toLocaleString("tr-TR");
 
           const embed = buildEmbed({
-            title: "💾 Yedek Alındı",
+            title: `${E.backup} Yedek Alındı`,
             description: `<@${interaction.user.id}> tarafından sunucu yedeği alındı.`,
             color: Colors.Green,
             fields: [
@@ -204,14 +203,14 @@ export async function registerSlashCommands(client: Client): Promise<void> {
 
           const fields = [];
           if (result.restoredRoles.length > 0) {
-            fields.push({ name: `🎭 Geri Yüklenen Roller (${result.restoredRoles.length})`, value: result.restoredRoles.join(", ").slice(0, 1000), inline: false });
+            fields.push({ name: `${E.roles} Geri Yüklenen Roller (${result.restoredRoles.length})`, value: result.restoredRoles.join(", ").slice(0, 1000), inline: false });
           }
           if (result.restoredChannels.length > 0) {
-            fields.push({ name: `📁 Geri Yüklenen Kanallar (${result.restoredChannels.length})`, value: result.restoredChannels.join(", ").slice(0, 1000), inline: false });
+            fields.push({ name: `${E.folder} Geri Yüklenen Kanallar (${result.restoredChannels.length})`, value: result.restoredChannels.join(", ").slice(0, 1000), inline: false });
           }
 
           const embed = buildEmbed({
-            title: "🔄 Yedek Geri Yüklendi",
+            title: `${E.refresh} Yedek Geri Yüklendi`,
             description: `<@${interaction.user.id}> tarafından yedek geri yükleme yapıldı.\n\n${result.summary}`,
             color: result.restoredChannels.length > 0 || result.restoredRoles.length > 0 ? Colors.Blue : Colors.Green,
             fields,
@@ -231,7 +230,7 @@ export async function registerSlashCommands(client: Client): Promise<void> {
           const date = new Date(backup.takenAt).toLocaleString("tr-TR");
           await interaction.reply({
             embeds: [buildEmbed({
-              title: "📋 Yedek Bilgisi",
+              title: `${E.clipboard} Yedek Bilgisi`,
               description: `Son yedek: **${date}**`,
               color: Colors.Blurple,
               fields: [
@@ -249,7 +248,7 @@ export async function registerSlashCommands(client: Client): Promise<void> {
           resetUser(user.id);
           await interaction.reply({
             embeds: [buildEmbed({
-              title: "🔄 Sayaç Sıfırlandı",
+              title: `${E.refresh} Sayaç Sıfırlandı`,
               description: `<@${user.id}> kullanıcısının işlem sayacı sıfırlandı.`,
               color: Colors.Green,
               fields: [{ name: "Kullanıcı", value: user.tag, inline: true }],
@@ -270,7 +269,7 @@ export async function registerSlashCommands(client: Client): Promise<void> {
 
           await interaction.reply({
             embeds: [buildEmbed({
-              title: "📊 İşlem Sayacı",
+              title: `${E.stats} İşlem Sayacı`,
               description: `<@${user.id}> kullanıcısının mevcut sayacı: **${count}/3**`,
               color: count >= 3 ? Colors.Red : count >= 2 ? Colors.Yellow : Colors.Green,
               fields: actions ? [{ name: "Son 5 İşlem", value: actions, inline: false }] : [],
@@ -283,7 +282,7 @@ export async function registerSlashCommands(client: Client): Promise<void> {
     } catch (err) {
       console.error(`Komut hatası (${commandName}):`, err);
       try {
-        const errEmbed = buildEmbed({ title: "⚠️ Bir Hata Oluştu", description: "Komut işlenirken beklenmedik bir hata oluştu. Lütfen tekrar deneyin.", color: Colors.Red });
+        const errEmbed = buildEmbed({ title: `${E.warning} Bir Hata Oluştu`, description: "Komut işlenirken beklenmedik bir hata oluştu. Lütfen tekrar deneyin.", color: Colors.Red });
         if (interaction.deferred) {
           await interaction.editReply({ embeds: [errEmbed] });
         } else if (!interaction.replied) {
