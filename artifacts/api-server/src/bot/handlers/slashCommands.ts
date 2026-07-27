@@ -78,6 +78,11 @@ const commands = [
     .setName("yardim")
     .setDescription("Tüm bot komutlarını listele")
     .toJSON(),
+
+  new SlashCommandBuilder()
+    .setName("durum")
+    .setDescription("Botun çalışma süresi, ping ve sunucu bilgilerini göster")
+    .toJSON(),
 ];
 
 export async function registerSlashCommands(client: Client): Promise<void> {
@@ -295,6 +300,38 @@ export async function registerSlashCommands(client: Client): Promise<void> {
                 { name: "Kalan Hak", value: exceeded ? "0 (sınır aşıldı)" : String(remaining), inline: true },
                 { name: "Son İşlem", value: lastActionStr, inline: false },
                 ...(recentActions ? [{ name: "Son 5 İşlem", value: recentActions, inline: false }] : []),
+              ],
+            })],
+            ephemeral: true,
+          });
+          break;
+        }
+
+        case "durum": {
+          const uptime = client.uptime ?? 0;
+          const totalSeconds = Math.floor(uptime / 1000);
+          const days = Math.floor(totalSeconds / 86400);
+          const hours = Math.floor((totalSeconds % 86400) / 3600);
+          const minutes = Math.floor((totalSeconds % 3600) / 60);
+          const seconds = totalSeconds % 60;
+          const uptimeStr = `${days > 0 ? `${days}g ` : ""}${hours > 0 ? `${hours}s ` : ""}${minutes}d ${seconds}sn`;
+
+          const ping = client.ws.ping;
+          const pingStr = ping < 0 ? "Ölçülüyor..." : `${ping}ms`;
+          const pingColor = ping < 100 ? Colors.Green : ping < 200 ? Colors.Yellow : Colors.Red;
+
+          const guildCount = client.guilds.cache.size;
+          const guildList = client.guilds.cache.map((g) => `• ${g.name} (${g.memberCount} üye)`).join("\n") || "Yok";
+
+          await interaction.reply({
+            embeds: [buildEmbed({
+              title: `${E.bot} Bot Durumu`,
+              color: pingColor,
+              fields: [
+                { name: `${E.success} Çalışma Süresi`, value: uptimeStr, inline: true },
+                { name: `${E.tool} Ping`, value: pingStr, inline: true },
+                { name: `${E.home} Sunucu Sayısı`, value: String(guildCount), inline: true },
+                { name: `${E.protect} Aktif Sunucular`, value: guildList, inline: false },
               ],
             })],
             ephemeral: true,
