@@ -262,17 +262,40 @@ export async function registerSlashCommands(client: Client): Promise<void> {
           const user = interaction.options.getUser("kullanici", true);
           const record = getRecord(user.id);
           const count = record?.count ?? 0;
-          const actions = record?.actions
+          const limit = CONFIG.ACTION_LIMIT;
+          const remaining = Math.max(0, limit - count);
+          const exceeded = count > limit;
+
+          // Son işlem
+          const lastAction = record?.actions.at(-1);
+          const lastActionStr = lastAction
+            ? `${lastAction.type} → <@${lastAction.target}> — ${new Date(lastAction.at).toLocaleString("tr-TR")}`
+            : "Henüz işlem yok";
+
+          // Son 5 işlem (eskiden yeniye)
+          const recentActions = record?.actions
             .slice(-5)
-            .map((a) => `• ${a.type} → <@${a.target}> (${new Date(a.at).toLocaleString("tr-TR")})`)
-            .join("\n");
+            .reverse()
+            .map((a, i) => `${i + 1}. **${a.type}** → <@${a.target}>\n   ${new Date(a.at).toLocaleString("tr-TR")}`)
+            .join("\n") ?? null;
+
+          const statusStr = exceeded
+            ? `${E.security} **Yetkileri Alındı** (${count}/${limit})`
+            : remaining === 0
+            ? `${E.warning} **Son Hak Kullanıldı** — Bir sonraki işlemde yetki alınır`
+            : `${E.success} ${remaining}/${limit} hak kaldı`;
 
           await interaction.reply({
             embeds: [buildEmbed({
               title: `${E.stats} İşlem Sayacı`,
-              description: `<@${user.id}> kullanıcısının mevcut sayacı: **${count}/3**`,
-              color: count >= 3 ? Colors.Red : count >= 2 ? Colors.Yellow : Colors.Green,
-              fields: actions ? [{ name: "Son 5 İşlem", value: actions, inline: false }] : [],
+              description: `<@${user.id}>\n\n${statusStr}`,
+              color: exceeded || count >= limit ? Colors.Red : remaining <= 0 ? Colors.Yellow : Colors.Green,
+              fields: [
+                { name: "Toplam İşlem", value: `${count}/${limit}`, inline: true },
+                { name: "Kalan Hak", value: exceeded ? "0 (sınır aşıldı)" : String(remaining), inline: true },
+                { name: "Son İşlem", value: lastActionStr, inline: false },
+                ...(recentActions ? [{ name: "Son 5 İşlem", value: recentActions, inline: false }] : []),
+              ],
             })],
             ephemeral: true,
           });

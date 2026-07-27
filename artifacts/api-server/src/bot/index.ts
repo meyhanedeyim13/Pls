@@ -16,6 +16,7 @@ import { scheduleNightlyBackup } from "./handlers/backup.js";
 import { registerLinkGuard } from "./handlers/linkGuard.js";
 import { registerMessageLog } from "./handlers/messageLog.js";
 import { registerAuditLog } from "./handlers/auditLog.js";
+import { registerMuteHandler } from "./handlers/muteHandler.js";
 import { ensureSettingsTable } from "./utils/db.js";
 
 export function startBot(): void {
@@ -56,6 +57,7 @@ export function startBot(): void {
   registerLinkGuard(client);
   registerMessageLog(client);
   registerAuditLog(client);
+  registerMuteHandler(client);
   registerSlashCommands(client);
   scheduleNightlyBackup(client);
 
