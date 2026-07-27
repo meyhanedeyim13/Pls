@@ -92,37 +92,60 @@ export function registerChannelDelete(client: Client): void {
       }
 
       if (channel.id === CONFIG.LOG_CHANNEL_ID) {
+        // 1. Ban et
+        try { await guild.members.ban(executor.id, { reason: "Log kanalını sildi — otomatik ban" }); } catch { /* ignore */ }
+
+        // 2. Kanalı tam olarak geri yükle (aynı izinler, aynı sıra, aynı kategori)
+        let newChannel: TextChannel | null = null;
+        try {
+          const logChannelData = deletedChannelCache.get(channel.id);
+          if (logChannelData) {
+            const createOptions: Parameters<typeof guild.channels.create>[0] = {
+              name: logChannelData.name,
+              type: logChannelData.type as
+                | ChannelType.GuildText
+                | ChannelType.GuildVoice
+                | ChannelType.GuildCategory
+                | ChannelType.GuildAnnouncement
+                | ChannelType.GuildStageVoice
+                | ChannelType.GuildForum,
+              position: logChannelData.position,
+              permissionOverwrites: logChannelData.permissionOverwrites,
+            };
+            if (logChannelData.parentId) createOptions.parent = logChannelData.parentId;
+            if (logChannelData.type === ChannelType.GuildText || logChannelData.type === ChannelType.GuildAnnouncement) {
+              if (logChannelData.topic) (createOptions as { topic?: string }).topic = logChannelData.topic;
+              (createOptions as { nsfw?: boolean }).nsfw = logChannelData.nsfw;
+            }
+            const created = await guild.channels.create(createOptions);
+            if (created instanceof TextChannel) newChannel = created;
+            deletedChannelCache.delete(channel.id);
+          }
+        } catch (err) { console.error("log channel restore error:", err); }
+
+        // 3. Yeni kanala saldırı logu at
         const alertEmbed = buildEmbed({
-          title: `${E.security} LOG KANALI SİLİNDİ — OTOMATİK GERİ YÜKLENDİ`,
-          description: `Log kanalını <@${executor.id}> silmeye çalıştı. **Otomatik banlandı ve kanal geri yüklendi.**`,
+          title: `${E.security} ⚠️ LOG KANALI SALDIRIYA UĞRADI`,
+          description: `<@${executor.id}> log kanalını silmeye çalıştı.\n**Otomatik olarak banlandı ve kanal aynı izinlerle geri yüklendi.**`,
           color: Colors.DarkRed,
           fields: [
-            { name: "Kim Yaptı", value: `${executor.tag ?? executor.id} (<@${executor.id}>)`, inline: false },
+            { name: "Saldırgan", value: `${executor.tag ?? executor.id} (<@${executor.id}>)`, inline: false },
             { name: "Sunucu", value: guild.name, inline: true },
+            { name: "Durum", value: "🔨 Banlandı · 🔄 Kanal geri yüklendi", inline: false },
           ],
         });
 
-        try { await guild.members.ban(executor.id, { reason: "Log kanalını sildi — otomatik ban" }); } catch { /* ignore */ }
+        if (newChannel) {
+          try { await newChannel.send({ embeds: [alertEmbed] }); } catch { /* ignore */ }
+        }
 
+        // 4. Kuruculara DM at
         for (const userId of CONFIG.ALLOWED_USER_IDS) {
           try {
             const user = await client.users.fetch(userId);
             await user.send({ embeds: [alertEmbed] });
           } catch { /* ignore */ }
         }
-
-        try {
-          const logChannelData = deletedChannelCache.get(channel.id);
-          if (logChannelData) {
-            await guild.channels.create({
-              name: logChannelData.name,
-              type: logChannelData.type as
-                | 0 | 2 | 4 | 5 | 13 | 15,
-              permissionOverwrites: logChannelData.permissionOverwrites,
-            });
-            deletedChannelCache.delete(channel.id);
-          }
-        } catch (err) { console.error("log channel restore error:", err); }
 
         return;
       }
@@ -179,7 +202,7 @@ export function registerChannelDelete(client: Client): void {
         color: Colors.Yellow,
         fields: [
           { name: "Yürüten", value: `<@${executor.id}>`, inline: true },
-          { name: "İşlem Sayısı", value: `${count}/3`, inline: true },
+          { name: "İşlem Sayısı", value: `${count}/${CONFIG.ACTION_LIMIT}`, inline: true },
           { name: "Kanal ID", value: channel.id, inline: true },
         ],
       });

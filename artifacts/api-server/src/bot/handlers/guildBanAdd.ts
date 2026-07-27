@@ -18,6 +18,7 @@ import {
 import { buildEmbed, sendLog } from "../utils/logger.js";
 import { getYetkiliRolId } from "../utils/db.js";
 import { E } from "../utils/emojis.js";
+import { CONFIG } from "../config.js";
 
 export function registerGuildBanAdd(client: Client): void {
   client.on(Events.GuildBanAdd, async (ban) => {
@@ -113,7 +114,7 @@ export function registerGuildBanAdd(client: Client): void {
           color: Colors.Red,
           fields: [
             { name: "Yürüten", value: `<@${executor.id}>`, inline: true },
-            { name: "İşlem Sayısı", value: `${count}/3`, inline: true },
+            { name: "İşlem Sayısı", value: `${count}/${CONFIG.ACTION_LIMIT}`, inline: true },
             { name: "Hedef", value: `<@${ban.user.id}>`, inline: true },
           ],
         }),

@@ -17,6 +17,7 @@ import {
 import { buildEmbed, sendLog } from "../utils/logger.js";
 import { getYetkiliRolId } from "../utils/db.js";
 import { E } from "../utils/emojis.js";
+import { CONFIG } from "../config.js";
 
 export function registerGuildMemberRemove(client: Client): void {
   client.on(Events.GuildMemberRemove, async (member) => {
@@ -117,7 +118,7 @@ export function registerGuildMemberRemove(client: Client): void {
           color: Colors.Orange,
           fields: [
             { name: "Yürüten", value: `<@${executor.id}>`, inline: true },
-            { name: "İşlem Sayısı", value: `${count}/3`, inline: true },
+            { name: "İşlem Sayısı", value: `${count}/${CONFIG.ACTION_LIMIT}`, inline: true },
           ],
         }),
       );

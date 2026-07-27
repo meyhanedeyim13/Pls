@@ -9,6 +9,7 @@ import {
 import { isExemptExecutor, isExemptRoleOnly, recordAction } from "../utils/actionTracker.js";
 import { buildEmbed, sendLog } from "../utils/logger.js";
 import { E } from "../utils/emojis.js";
+import { CONFIG } from "../config.js";
 
 export function registerChannelCreate(client: Client): void {
   client.on(Events.ChannelCreate, async (channel) => {
@@ -80,7 +81,7 @@ export function registerChannelCreate(client: Client): void {
           color: Colors.Blue,
           fields: [
             { name: "Yürüten", value: `<@${executor.id}>`, inline: true },
-            { name: "İşlem Sayısı", value: `${count}/3`, inline: true },
+            { name: "İşlem Sayısı", value: `${count}/${CONFIG.ACTION_LIMIT}`, inline: true },
             { name: "Kanal", value: `<#${channel.id}>`, inline: true },
           ],
         }),
