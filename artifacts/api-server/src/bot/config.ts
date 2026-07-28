@@ -33,6 +33,4 @@ export const CONFIG = {
   ACTION_LIMIT: 2,
 
   ACTION_WINDOW_MS: 0,
-
-  AI_CHANNEL_ID: "1530367038722281683",
 } as const;

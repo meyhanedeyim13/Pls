@@ -18,7 +18,6 @@ import { registerMessageLog } from "./handlers/messageLog.js";
 import { registerAuditLog } from "./handlers/auditLog.js";
 import { registerMuteHandler } from "./handlers/muteHandler.js";
 import { registerProfanityFilter } from "./handlers/profanityFilter.js";
-import { registerAiChat } from "./handlers/aiChat.js";
 import { ensureSettingsTable } from "./utils/db.js";
 
 export function startBot(): void {
@@ -61,7 +60,6 @@ export function startBot(): void {
   registerAuditLog(client);
   registerMuteHandler(client);
   registerProfanityFilter(client);
-  registerAiChat(client);
   registerSlashCommands(client);
   scheduleNightlyBackup(client);
 
