@@ -98,37 +98,56 @@ const PROFANITY_LIST = [
   "katil",
 ];
 
-// Türkçe karakterleri normalize et (küçük harfe çevir, benzer harfleri birleştir)
-function normalize(text: string): string {
+const WORD_CHARS = "a-zığüşöçA-ZİĞÜŞÖÇ";
+const WORD_SPLIT_RE = new RegExp(`[^${WORD_CHARS}]+`);
+
+/** Türkçe küçük harf + leet-speak dönüşümü, boşlukları KORUR */
+function normalizeTr(text: string): string {
   return text
     .toLowerCase()
-    .replace(/İ/g, "i")
-    .replace(/I/g, "ı")
-    .replace(/Ğ/g, "ğ")
-    .replace(/Ü/g, "ü")
-    .replace(/Ş/g, "ş")
-    .replace(/Ö/g, "ö")
-    .replace(/Ç/g, "ç")
-    // bypass girişimlerine karşı: harf aralarındaki nokta/tire/boşluk/@ kaldır
-    .replace(/[.\-_*@!1\s]+/g, "")
-    // yaygın harf değiştirmeleri
-    .replace(/0/g, "o")
-    .replace(/3/g, "e")
-    .replace(/4/g, "a")
-    .replace(/5/g, "s")
-    .replace(/\$/g, "s")
-    .replace(/@/g, "a")
-    .replace(/!/g, "i");
+    .replace(/İ/g, "i").replace(/I/g, "ı")
+    .replace(/Ğ/g, "ğ").replace(/Ü/g, "ü")
+    .replace(/Ş/g, "ş").replace(/Ö/g, "ö").replace(/Ç/g, "ç")
+    .replace(/0/g, "o").replace(/3/g, "e")
+    .replace(/4/g, "a").replace(/5/g, "s")
+    .replace(/\$/g, "s").replace(/@/g, "a");
+}
+
+/** Agresif: tüm harf-dışı karakterleri sil (bypass tespiti için) */
+function normalizeAggressive(text: string): string {
+  return normalizeTr(text).replace(/[^a-zığüşöç]/g, "");
 }
 
 function containsProfanity(text: string): string | null {
-  const normalizedText = normalize(text);
-  for (const word of PROFANITY_LIST) {
-    const normalizedWord = normalize(word);
-    if (normalizedText.includes(normalizedWord)) {
-      return word;
+  const normalized = normalizeTr(text);
+  // Metni kelimelere böl (noktalama/boşluk sınırlarında)
+  const words = normalized.split(WORD_SPLIT_RE).filter(Boolean);
+
+  for (const profanity of PROFANITY_LIST) {
+    const normP = normalizeTr(profanity);
+    const profWords = normP.split(WORD_SPLIT_RE).filter(Boolean);
+
+    if (profWords.length === 1) {
+      // Tek kelime: sadece tam eşleşme (substring DEĞİL — "Quit" içindeki "it" tutulmaz)
+      if (words.some((w) => w === normP)) return profanity;
+    } else {
+      // Çoklu kelime ifadesi: sıralı tam eşleşme
+      outer: for (let i = 0; i <= words.length - profWords.length; i++) {
+        for (let j = 0; j < profWords.length; j++) {
+          if (words[i + j] !== profWords[j]) continue outer;
+        }
+        return profanity;
+      }
     }
   }
+
+  // Bypass tespiti: nokta/tire/@ ile gizlenmiş 4+ harfli kelimeler (ör: "s.i.k.i.ş")
+  const aggressive = normalizeAggressive(text);
+  for (const profanity of PROFANITY_LIST) {
+    const normP = normalizeAggressive(profanity);
+    if (normP.length >= 4 && aggressive.includes(normP)) return profanity;
+  }
+
   return null;
 }
 
