@@ -55,15 +55,18 @@ export async function sendPublicLog(
 
 export function buildEmbed(options: {
   title: string;
-  description: string;
+  description?: string;
   color?: number;
   fields?: { name: string; value: string; inline?: boolean }[];
 }): EmbedBuilder {
   const embed = new EmbedBuilder()
     .setTitle(options.title)
-    .setDescription(options.description)
     .setColor(options.color ?? Colors.Orange)
     .setTimestamp();
+
+  if (options.description) {
+    embed.setDescription(options.description);
+  }
 
   if (options.fields) {
     embed.addFields(options.fields);

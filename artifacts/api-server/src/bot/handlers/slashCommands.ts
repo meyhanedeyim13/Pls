@@ -6,6 +6,7 @@ import {
   SlashCommandBuilder,
   Colors,
   PermissionFlagsBits,
+  MessageFlags,
 } from "discord.js";
 import { CONFIG } from "../config.js";
 import { buildEmbed, sendLog } from "../utils/logger.js";
@@ -113,7 +114,7 @@ export async function registerSlashCommands(client: Client): Promise<void> {
       if (!isSpecial) {
         await interaction.reply({
           embeds: [buildEmbed({ title: `${E.error} Yetersiz Yetki`, description: "Bu komutu kullanma yetkiniz yok.", color: Colors.Red })],
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
         return;
       }
@@ -133,7 +134,7 @@ export async function registerSlashCommands(client: Client): Promise<void> {
                 { name: "Koruma Kuralı", value: "Bu role sahip kişiler birbirlerine moderasyon işlemi yapamaz.", inline: false },
               ],
             })],
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
           });
           break;
         }
@@ -151,7 +152,7 @@ export async function registerSlashCommands(client: Client): Promise<void> {
             color: aktif ? Colors.Red : Colors.Green,
           });
 
-          await interaction.reply({ embeds: [embed], ephemeral: true });
+          await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
           await sendLog(guild, embed).catch(() => {});
           break;
         }
@@ -176,13 +177,13 @@ export async function registerSlashCommands(client: Client): Promise<void> {
                 { name: `${E.link} Link Engeli`, value: linkEngelAktif ? `${E.active} Aktif` : `${E.inactive} Kapalı`, inline: true },
               ],
             })],
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
           });
           break;
         }
 
         case "yedek-al": {
-          await interaction.deferReply({ ephemeral: true });
+          await interaction.deferReply({ flags: MessageFlags.Ephemeral });
           const backup = await takeBackup(guild);
           const date = new Date(backup.takenAt).toLocaleString("tr-TR");
 
@@ -203,7 +204,7 @@ export async function registerSlashCommands(client: Client): Promise<void> {
         }
 
         case "restore": {
-          await interaction.deferReply({ ephemeral: true });
+          await interaction.deferReply({ flags: MessageFlags.Ephemeral });
           const result = await restoreBackup(guild);
 
           const fields = [];
@@ -229,7 +230,7 @@ export async function registerSlashCommands(client: Client): Promise<void> {
         case "yedek-bilgi": {
           const backup = getBackup(guild.id);
           if (!backup) {
-            await interaction.reply({ content: "Henüz yedek alınmamış.", ephemeral: true });
+            await interaction.reply({ content: "Henüz yedek alınmamış.", flags: MessageFlags.Ephemeral });
             return;
           }
           const date = new Date(backup.takenAt).toLocaleString("tr-TR");
@@ -243,7 +244,7 @@ export async function registerSlashCommands(client: Client): Promise<void> {
                 { name: "Rol Sayısı", value: String(backup.roles.length), inline: true },
               ],
             })],
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
           });
           break;
         }
@@ -258,7 +259,7 @@ export async function registerSlashCommands(client: Client): Promise<void> {
               color: Colors.Green,
               fields: [{ name: "Kullanıcı", value: user.tag, inline: true }],
             })],
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
           });
           break;
         }
@@ -302,7 +303,7 @@ export async function registerSlashCommands(client: Client): Promise<void> {
                 ...(recentActions ? [{ name: "Son 5 İşlem", value: recentActions, inline: false }] : []),
               ],
             })],
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
           });
           break;
         }
@@ -314,18 +315,27 @@ export async function registerSlashCommands(client: Client): Promise<void> {
           const hours = Math.floor((totalSeconds % 86400) / 3600);
           const minutes = Math.floor((totalSeconds % 3600) / 60);
           const seconds = totalSeconds % 60;
-          const uptimeStr = `${days > 0 ? `${days}g ` : ""}${hours > 0 ? `${hours}s ` : ""}${minutes}d ${seconds}sn`;
+          const parts: string[] = [];
+          if (days > 0) parts.push(`${days}g`);
+          if (hours > 0) parts.push(`${hours}s`);
+          parts.push(`${minutes}d`);
+          parts.push(`${seconds}sn`);
+          const uptimeStr = parts.join(" ");
 
           const ping = client.ws.ping;
           const pingStr = ping < 0 ? "Ölçülüyor..." : `${ping}ms`;
-          const pingColor = ping < 100 ? Colors.Green : ping < 200 ? Colors.Yellow : Colors.Red;
+          const pingColor = ping < 0 ? Colors.Yellow : ping < 100 ? Colors.Green : ping < 200 ? Colors.Yellow : Colors.Red;
 
           const guildCount = client.guilds.cache.size;
-          const guildList = client.guilds.cache.map((g) => `• ${g.name} (${g.memberCount} üye)`).join("\n") || "Yok";
+          const guildList = client.guilds.cache
+            .map((g) => `• ${g.name} (${g.memberCount ?? "?"} üye)`)
+            .join("\n")
+            .slice(0, 1020) || "Yok";
 
           await interaction.reply({
             embeds: [buildEmbed({
               title: `${E.bot} Bot Durumu`,
+              description: `Kahvehane Koruma botu aktif çalışıyor.`,
               color: pingColor,
               fields: [
                 { name: `${E.success} Çalışma Süresi`, value: uptimeStr, inline: true },
@@ -334,7 +344,7 @@ export async function registerSlashCommands(client: Client): Promise<void> {
                 { name: `${E.protect} Aktif Sunucular`, value: guildList, inline: false },
               ],
             })],
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
           });
           break;
         }
@@ -346,7 +356,7 @@ export async function registerSlashCommands(client: Client): Promise<void> {
         if (interaction.deferred) {
           await interaction.editReply({ embeds: [errEmbed] });
         } else if (!interaction.replied) {
-          await interaction.reply({ embeds: [errEmbed], ephemeral: true });
+          await interaction.reply({ embeds: [errEmbed], flags: MessageFlags.Ephemeral });
         }
       } catch { /* cevap gönderilemedi */ }
     }

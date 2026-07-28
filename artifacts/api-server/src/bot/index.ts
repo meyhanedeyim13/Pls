@@ -17,6 +17,7 @@ import { registerLinkGuard } from "./handlers/linkGuard.js";
 import { registerMessageLog } from "./handlers/messageLog.js";
 import { registerAuditLog } from "./handlers/auditLog.js";
 import { registerMuteHandler } from "./handlers/muteHandler.js";
+import { registerProfanityFilter } from "./handlers/profanityFilter.js";
 import { ensureSettingsTable } from "./utils/db.js";
 
 export function startBot(): void {
@@ -58,6 +59,7 @@ export function startBot(): void {
   registerMessageLog(client);
   registerAuditLog(client);
   registerMuteHandler(client);
+  registerProfanityFilter(client);
   registerSlashCommands(client);
   scheduleNightlyBackup(client);
 
