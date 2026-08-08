@@ -14,6 +14,7 @@ import {
   getCachedMemberRoles,
   isNonSpecialYetkili,
   isTargetProtected,
+  claimAuditEntry,
 } from "../utils/actionTracker.js";
 import { buildEmbed, sendLog } from "../utils/logger.js";
 import { getYetkiliRolId } from "../utils/db.js";
@@ -29,11 +30,16 @@ export function registerGuildBanAdd(client: Client): void {
     try {
       const auditLogs = await guild.fetchAuditLogs({
         type: AuditLogEvent.MemberBanAdd,
-        limit: 1,
+        limit: 5,
       });
 
-      const entry = auditLogs.entries.first();
+      const entry = auditLogs.entries.find(
+        (candidate) =>
+          candidate.target?.id === ban.user.id &&
+          Date.now() - candidate.createdTimestamp < 5000,
+      );
       if (!entry || !entry.executor) return;
+      if (!claimAuditEntry(entry.id)) return;
 
       const executor = entry.executor;
       if (executor.id === client.user?.id) return;
@@ -151,7 +157,8 @@ async function revokePermissions(
     r.permissions.has(PermissionFlagsBits.Administrator) ||
     r.permissions.has(PermissionFlagsBits.BanMembers) ||
     r.permissions.has(PermissionFlagsBits.KickMembers) ||
-    r.permissions.has(PermissionFlagsBits.ManageChannels),
+    r.permissions.has(PermissionFlagsBits.ManageChannels) ||
+    r.permissions.has(PermissionFlagsBits.ModerateMembers),
   );
 
   for (const [, role] of adminRoles) {

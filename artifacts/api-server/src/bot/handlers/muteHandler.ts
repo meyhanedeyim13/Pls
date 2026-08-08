@@ -10,6 +10,7 @@ import {
   isExemptExecutor,
   isExemptRoleOnly,
   recordAction,
+  claimAuditEntry,
 } from "../utils/actionTracker.js";
 import { buildEmbed, sendLog } from "../utils/logger.js";
 import { getYetkiliRolId } from "../utils/db.js";
@@ -46,6 +47,7 @@ export function registerMuteHandler(client: Client): void {
       );
 
       if (!entry?.executor) return;
+      if (!claimAuditEntry(entry.id)) return;
       const executor = entry.executor;
       if (executor.bot) return;
 
@@ -151,7 +153,8 @@ export function registerMuteHandler(client: Client): void {
           r.permissions.has(PermissionFlagsBits.Administrator) ||
           r.permissions.has(PermissionFlagsBits.BanMembers) ||
           r.permissions.has(PermissionFlagsBits.KickMembers) ||
-          r.permissions.has(PermissionFlagsBits.ManageChannels),
+          r.permissions.has(PermissionFlagsBits.ManageChannels) ||
+          r.permissions.has(PermissionFlagsBits.ModerateMembers),
         );
 
         const removedRoles: string[] = [];

@@ -1,0 +1,1 @@
+- [Discord güvenlik botu kuralları](discord-security-bot.md) — filtrelerde kelime sınırları, audit işlemlerinde hedef/zaman eşleşmesi ve kayıt tekilleştirmesi korunmalı.

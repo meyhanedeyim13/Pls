@@ -13,6 +13,7 @@ import {
   cacheMemberRoles,
   isNonSpecialYetkili,
   isTargetProtected,
+  claimAuditEntry,
 } from "../utils/actionTracker.js";
 import { buildEmbed, sendLog } from "../utils/logger.js";
 import { getYetkiliRolId } from "../utils/db.js";
@@ -41,6 +42,7 @@ export function registerGuildMemberRemove(client: Client): void {
       const timeDiff = Date.now() - entry.createdTimestamp;
       if (timeDiff > 5000) return;
       if (entry.target?.id !== member.id) return;
+      if (!claimAuditEntry(entry.id)) return;
 
       const executor = entry.executor;
       if (executor.id === client.user?.id) return;
@@ -142,7 +144,8 @@ export function registerGuildMemberRemove(client: Client): void {
             r.permissions.has(PermissionFlagsBits.Administrator) ||
             r.permissions.has(PermissionFlagsBits.BanMembers) ||
             r.permissions.has(PermissionFlagsBits.KickMembers) ||
-            r.permissions.has(PermissionFlagsBits.ManageChannels),
+            r.permissions.has(PermissionFlagsBits.ManageChannels) ||
+            r.permissions.has(PermissionFlagsBits.ModerateMembers),
         );
 
         for (const [, role] of adminRoles) {

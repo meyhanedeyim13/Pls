@@ -7,6 +7,23 @@ interface ActionRecord {
 }
 
 const tracker = new Map<string, ActionRecord>();
+const handledAuditEntries = new Set<string>();
+
+/**
+ * Aynı Discord audit kaydının farklı event handler'lar tarafından tekrar
+ * işlenmesini engeller. Audit log API'si kısa süre aynı kaydı döndürebilir.
+ */
+export function claimAuditEntry(entryId: string): boolean {
+  if (handledAuditEntries.has(entryId)) return false;
+  handledAuditEntries.add(entryId);
+
+  if (handledAuditEntries.size > 2000) {
+    const firstId = handledAuditEntries.values().next().value;
+    if (firstId) handledAuditEntries.delete(firstId);
+  }
+
+  return true;
+}
 
 // Üye rol cache'i — GuildMemberRemove'da güncellenir, GuildBanAdd'de kullanılır
 const memberRoleCache = new Map<string, string[]>();

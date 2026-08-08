@@ -3,7 +3,8 @@ import { CONFIG } from "../config.js";
 import { buildEmbed, sendLog } from "../utils/logger.js";
 import { E } from "../utils/emojis.js";
 
-// Türkçe küfür kelimesi listesi — substring olarak kontrol edilir
+// Türkçe küfür kelimeleri. Mesajlar kelime sınırlarında kontrol edilir;
+// İngilizce kelimelerin içindeki kısa parçalar yanlış pozitif üretmemelidir.
 const PROFANITY_LIST = [
   "orospu",
   "orospuçocuğu",
@@ -83,7 +84,6 @@ const PROFANITY_LIST = [
   "köpeğin",
   "eşek",
   "eşeğin",
-  "it",
   "itoğlu",
   "it oğlu",
   "kürt",
@@ -141,7 +141,9 @@ function containsProfanity(text: string): string | null {
     }
   }
 
-  // Bypass tespiti: nokta/tire/@ ile gizlenmiş 4+ harfli kelimeler (ör: "s.i.k.i.ş")
+  // Bypass tespiti: nokta/tire/@ ile gizlenmiş 4+ harfli kelimeler (ör: "s.i.k.i.ş").
+  // Kısa ve belirsiz kelimeler (özellikle "it") listeye alınmaz; aksi halde
+  // normal İngilizce mesajlar silinebilir.
   const aggressive = normalizeAggressive(text);
   for (const profanity of PROFANITY_LIST) {
     const normP = normalizeAggressive(profanity);

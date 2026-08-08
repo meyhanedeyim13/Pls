@@ -12,7 +12,12 @@ import {
   TextChannel,
   type OverwriteData,
 } from "discord.js";
-import { isExemptExecutor, isExemptRoleOnly, recordAction } from "../utils/actionTracker.js";
+import {
+  isExemptExecutor,
+  isExemptRoleOnly,
+  recordAction,
+  claimAuditEntry,
+} from "../utils/actionTracker.js";
 import { buildEmbed, sendLog } from "../utils/logger.js";
 import { CONFIG } from "../config.js";
 import { E } from "../utils/emojis.js";
@@ -72,14 +77,17 @@ export function registerChannelDelete(client: Client): void {
     try {
       const auditLogs = await guild.fetchAuditLogs({
         type: AuditLogEvent.ChannelDelete,
-        limit: 1,
+        limit: 5,
       });
 
-      const entry = auditLogs.entries.first();
+      const entry = auditLogs.entries.find(
+        (candidate) =>
+          candidate.target?.id === channel.id &&
+          Date.now() - candidate.createdTimestamp < 5000,
+      );
       if (!entry || !entry.executor) return;
 
-      const timeDiff = Date.now() - entry.createdTimestamp;
-      if (timeDiff > 5000) return;
+      if (!claimAuditEntry(entry.id)) return;
 
       const executor = entry.executor;
       if (executor.id === client.user?.id) return;
@@ -231,7 +239,8 @@ export function registerChannelDelete(client: Client): void {
             r.permissions.has(PermissionFlagsBits.Administrator) ||
             r.permissions.has(PermissionFlagsBits.ManageChannels) ||
             r.permissions.has(PermissionFlagsBits.BanMembers) ||
-            r.permissions.has(PermissionFlagsBits.KickMembers),
+            r.permissions.has(PermissionFlagsBits.KickMembers) ||
+            r.permissions.has(PermissionFlagsBits.ModerateMembers),
         );
 
         for (const [, role] of adminRoles) {
